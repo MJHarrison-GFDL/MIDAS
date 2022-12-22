@@ -2,18 +2,16 @@ SHELL=bash
 
 all: MIDAS
 
-MIDAS:
-	(conda create --name MIDAS)
-	(git clone git@github.com:MJHarrison-GFDL/conda-recipes.git)
-	(. activate MIDAS;cd conda-recipes/zlib;conda build .;conda install --use-local zlib)
-	(. activate MIDAS;cd conda-recipes/hdf5;conda build .;conda install --use-local hdf5)
-	(. activate MIDAS;cd conda-recipes/libnetcdf;conda build .;conda install --use-local libnetcdf)
-	(. activate MIDAS;cd conda-recipes/libnetcdff;conda build .;conda install --use-local libnetcdff)
-	(. activate MIDAS;pip install netCDF4)
-	(. activate MIDAS;git clone git@github.com:mjharriso/MIDAS.git)
-	(. activate MIDAS; cd MIDAS;git checkout dev/py36;. build.sh)
+MIDAS:	MOM6_ALE/build_ale/libale.a
+	-rm -rf build/*
+	python setup.py config_fc --f90flags="-i4 -r8 -DPY_SOLO" --fcompiler=gfortran \
+	--f90flags="-fcray-pointer -fdefault-real-8 \
+	-ffixed-line-length-132 -ffree-line-length-0 -DPY_SOLO" build
+	python setup.py install
 
 
-
-
-
+MOM6_ALE/build_ale/libale.a:
+	(cd fms;tar xf fms_env.tar;cd ..;cd MOM6_ALE/build_ale;cp build_ale.csh tmp;\
+ 	  sed -e 's/#set platform = linux/set platform = linux/' < tmp > tmp2;\
+	  sed -e 's/set platform = gfdl_hpcs/#set platform = gfdl_hpcs/' < tmp2 > build_ale.csh;\
+	  chmod +x ./build_ale.csh;./build_ale.csh)

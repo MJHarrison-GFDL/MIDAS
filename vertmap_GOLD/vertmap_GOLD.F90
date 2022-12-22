@@ -17,7 +17,7 @@ module vertmap_GOLD_mod
 !#    grid_obs=generic_grid('temp_salt_z.nc',var='PTEMP')
 !#    S=state(path='temp_salt_z.nc',grid=grid_obs,
 !#    fields=['PTEMP','SALT'],date_bounds=[datetime(1900,1,1,0,0,0),
-!#    datetime(1900,1,30,0,0,0)],default_calendar='noleap')    
+!#    datetime(1900,1,30,0,0,0)],default_calendar='noleap')
 !#    fvgrid=nc.Dataset('/net3/mjh/models/CM2G/Vertical_coordinate.nc')
 !#    R=fvgrid.variables['R'][:]
 !#    nkml=2;nkbl=2;min_depth=10.0;p_ref=2.e7;hml=5.0;fit_target=True
@@ -25,15 +25,12 @@ module vertmap_GOLD_mod
 !#    T=S.horiz_interp('SALT',target=grid,src_modulo=True,method='bilinear',PrevState=T)
 !#    T.remap_Z_to_layers('PTEMP','SALT',R,p_ref,grid.wet,nkml,nkbl,hml,fit_target)
 !#
-!# ==================================================================  
-  
-  
+!# ==================================================================
 
 
-  
-#ifndef PY_SOLO  
-  use GOLD_EOS, only : EOS_type, calculate_density,calculate_density_derivs
-#endif
+
+
+
 
   interface fill_boundaries
      module procedure fill_boundaries_real
@@ -41,10 +38,10 @@ module vertmap_GOLD_mod
   end interface
 
   real, parameter :: epsln=1.e-10
-  
+
   public :: fill_miss_2d, tracer_z_init, find_interfaces
 
-  
+
 contains
 
   function find_interfaces(rho,zin,Rb,depth,nlevs,nkml,nkbl,hml,debug) result(zi)
@@ -57,7 +54,6 @@ contains
 !  (in)     nkbl : number of buffer layer pieces
 !  (in)      hml : mixed layer depth
 
-#ifdef PY_SOLO
     real(kind=8), dimension(:,:,:), intent(in) :: rho
     real(kind=8), dimension(size(rho,3)), intent(in) :: zin
     real(kind=8), dimension(:), intent(in) :: Rb
@@ -66,51 +62,39 @@ contains
     logical, optional, intent(in) :: debug
     real(kind=8), dimension(size(rho,1),size(rho,2),size(Rb,1)) :: zi
     integer, intent(in), optional :: nkml, nkbl
-    real, intent(in), optional    :: hml
-#endif
+    real(kind=8), intent(in), optional    :: hml
 
-#ifndef PY_SOLO
-    real, dimension(:,:,:), intent(in) :: rho
-    real, dimension(size(rho,3)), intent(in) :: zin
-    real, dimension(:), intent(in) :: Rb
-    real, dimension(size(rho,1),size(rho,2)), intent(in) :: depth
-    real, dimension(size(rho,1),size(rho,2)), optional, intent(in) ::nlevs
-    logical, optional, intent(in) :: debug
-    real, dimension(size(rho,1),size(rho,2),size(Rb,1)) :: zi
-    integer, intent(in), optional :: nkml, nkbl
-    real, intent(in), optional    :: hml
-#endif
-    real, dimension(size(rho,1),size(rho,3)) :: rho_
-    real, dimension(size(rho,1)) :: depth_
+    real(kind=8), dimension(size(rho,1),size(rho,3)) :: rho_
+    real(kind=8), dimension(size(rho,1)) :: depth_
     logical :: unstable
     integer :: dir
     integer, dimension(size(rho,1),size(Rb,1)) :: ki_
-    real, dimension(size(rho,1),size(Rb,1)) :: zi_
+    real(kind=8), dimension(size(rho,1),size(Rb,1)) :: zi_
     integer, dimension(size(rho,1),size(rho,2)) :: nlevs_
-    integer, dimension(size(rho,1)) :: lo,hi        
-    real :: slope,drhodz,hml_
+    integer, dimension(size(rho,1)) :: lo,hi
+    real(kind=8) :: slope,drhodz,hml_
     integer :: i,j,k,l,nx,ny,nz
     integer :: nlay,nkml_,nkbl_
     logical :: debug_ = .false.
-    
-    real, parameter :: zoff=0.999
-    
+
+    real(kind=8), parameter :: zoff=0.999
+
     nlay=size(Rb)-1
-    
+
     zi=0.0
 
 
     if (PRESENT(debug)) debug_=debug
-    
-    nx = size(rho,1); ny=size(rho,2); nz = size(rho,3) 
+
+    nx = size(rho,1); ny=size(rho,2); nz = size(rho,3)
 
     nlevs_(:,:) = size(rho,3)
 
     nkml_=0;nkbl_=0;hml_=0.0
     if (PRESENT(nkml)) nkml_=nkml
     if (PRESENT(nkbl)) nkbl_=nkbl
-    if (PRESENT(hml)) hml_=hml    
-    
+    if (PRESENT(hml)) hml_=hml
+
     if (PRESENT(nlevs)) then
         nlevs_(:,:) = int(nlevs(:,:))
     endif
@@ -136,7 +120,7 @@ contains
                             if (drhodz  < 0.0) then
                                 unstable=.true.
                             endif
-                            rho_(i,k) = rho_(i,k-1)+drhodz*zoff*(zin(k)-zin(k-1)) 
+                            rho_(i,k) = rho_(i,k-1)+drhodz*zoff*(zin(k)-zin(k-1))
                         endif
                     endif
                  enddo
@@ -151,7 +135,7 @@ contains
                             if (drhodz  < 0.0) then
                                 unstable=.true.
                             endif
-                            rho_(i,k) = rho_(i,k+1)-drhodz*(zin(k+1)-zin(k)) 
+                            rho_(i,k) = rho_(i,k+1)-drhodz*(zin(k+1)-zin(k))
                         endif
                     endif
                  enddo
@@ -160,11 +144,11 @@ contains
           enddo
           if (debug_) then
               print *,'final density profile= ', rho_(i,:)
-          endif          
+          endif
        enddo i_loop
-          
+
        ki_(:,:) = 0
-       zi_(:,:) = 0.0          
+       zi_(:,:) = 0.0
        depth_(:)=-1.0*depth(:,j)
        lo(:)=1
        hi(:)=nlevs_(:,j)
@@ -195,22 +179,21 @@ contains
 
 
   end function find_interfaces
-  
+
  function fill_miss_2d(a,good,fill,prev,cyclic_x,tripolar_n,smooth,num_pass,relax_criteria,relax_coeff) result(aout)
 !
-!# Use ICE-9 algorithm to populate points (fill=1) with 
+!# Use ICE-9 algorithm to populate points (fill=1) with
 !# valid data (good=1). If no information is available,
-!# Then use a previous guess (prev). Optionally (smooth) 
+!# Then use a previous guess (prev). Optionally (smooth)
 !# blend the filled points to achieve a more desirable result.
 !
-!  (in)        a   : input 2-d array with missing values 
+!  (in)        a   : input 2-d array with missing values
 !  (in)     good   : valid data mask for incoming array (1==good data; 0==missing data)
-!  (in)     fill   : same shape array of points which need filling (1==please fill;0==leave it alone)   
+!  (in)     fill   : same shape array of points which need filling (1==please fill;0==leave it alone)
 !  (in)     prev   : first guess where isolated holes exist,
 !  (in) cyclic_x   : use cyclic boundary conditions in x direction
-!  (in) tripolar_n : use tripolar boundary condition in y direction   
+!  (in) tripolar_n : use tripolar boundary condition in y direction
 !
-#ifdef PY_SOLO
    real(kind=8), dimension(:,:), intent(in) :: a
    real(kind=8), dimension(size(a,1),size(a,2)), intent(in) :: good,fill
    real(kind=8), dimension(size(a,1),size(a,2)), optional, intent(in) :: prev
@@ -218,35 +201,21 @@ contains
    logical, intent(in), optional :: smooth
    integer, intent(in), optional :: num_pass
    real(kind=8), intent(in), optional    :: relax_criteria, relax_coeff
-   
+
    real(kind=8), dimension(size(a,1),size(a,2)) :: aout
    real(kind=8), dimension(size(a,1),size(a,2)) :: b,r
    integer, dimension(size(a,1),size(a,2)) :: fill_pts,good_,good_new
-#endif
-
-#ifndef PY_SOLO
-   real, dimension(:,:), intent(in) :: a
-   real, dimension(size(a,1),size(a,2)), intent(in) :: good,fill
-   real, dimension(size(a,1),size(a,2)), optional, intent(in) :: prev
-   real, intent(in), optional    :: relax_criteria, relax_coeff
-   
-   logical, intent(in), optional :: cyclic_x, tripolar_n
-   logical, intent(in), optional :: smooth
-   integer, intent(in), optional :: num_pass
-   real, dimension(size(a,1),size(a,2)) :: aout,b,r
-   integer, dimension(size(a,1),size(a,2)) :: fill_pts,good_,good_new   
-#endif   
    integer :: nfill, i,j,ngood,nfill_prev,nx,ny,ip,jp,im,jm,ijp
-   real    :: east,west,north,south,sor
+   real(kind=8)    :: east,west,north,south,sor
    integer :: g,ge,gw,gn,gs,k
    logical :: xcyclic,tripolar_north,do_smooth
 
    integer, parameter :: num_pass_default = 1000
-   real, parameter :: relc = 0.25, crit = 1.e-3
+   real(kind=8), parameter :: relc = 0.25, crit = 1.e-3
 
    integer :: npass
-   real    :: relax, acrit
-   
+   real(kind=8)    :: relax, acrit
+
    npass=num_pass_default
    xcyclic=.false.
    if (PRESENT(cyclic_x)) xcyclic=cyclic_x
@@ -262,15 +231,15 @@ contains
 
    acrit=crit
    if (PRESENT(relax_criteria)) acrit=relax_criteria
-   
+
    nx=size(a,1);ny=size(a,2)
-   
+
    aout(:,:)=a(:,:)
-   
-   fill_pts(:,:)=fill(:,:)
+
+   fill_pts(:,:)=int(fill(:,:))
    nfill = sum(fill)
    nfill_prev = nfill
-   good_(:,:)=good(:,:)
+   good_(:,:)=int(good(:,:))
    r(:,:)=0.0
    b(:,:)=aout(:,:)
    good_new(:,:)=good_(:,:)
@@ -281,7 +250,7 @@ contains
          i_loop: do i=1,nx
             g = good_(i,j)
             if (good_(i,j)>0 .or. fill(i,j) .eq. 0) cycle i_loop
-            ip=i+1;im=i-1            
+            ip=i+1;im=i-1
             jp=j+1;jm=j-1
             ijp=i
             if (xcyclic) then
@@ -307,7 +276,7 @@ contains
             if (ge.eq.1) east=aout(ip,j)*ge
             if (gw.eq.1) west=aout(im,j)*gw
             if (gn.eq.1) north=aout(ijp,jp)*gn
-            if (gs.eq.1) south=aout(i,jm)*gs                        
+            if (gs.eq.1) south=aout(i,jm)*gs
             ngood = ge+gw+gn+gs
             if (ngood > 0) then
                 b(i,j)=(east+west+north+south)/ngood
@@ -317,7 +286,7 @@ contains
          enddo i_loop
       enddo
 
-      
+
       aout(:,:)=b(:,:)
       good_(:,:)=good_new(:,:)
       nfill_prev=nfill
@@ -341,13 +310,13 @@ contains
       endif
 
       nfill = sum(fill_pts)
-      
+
    end do
 
    if (PRESENT(num_pass)) then
        npass=num_pass
    endif
-   
+
    if (do_smooth) then
        do k=1,npass
           do j=1,ny
@@ -376,16 +345,18 @@ contains
                     endif
                     east=max(good(ip,j),fill(ip,j));west=max(good(im,j),fill(im,j))
                     north=max(good(ijp,jp),fill(ijp,jp));south=max(good(i,jm),fill(i,jm))
-            
-                    r(i,j) = relc*(south*aout(i,jm)+north*aout(ijp,jp)+west*aout(im,j)+east*aout(ip,j) - (south+north+west+east)*aout(i,j))
+
+                    r(i,j) = relc*(south*aout(i,jm)+north*aout(ijp,jp)+west*aout(im,j)+east*aout(ip,j) &
+                         - (south+north+west+east)*aout(i,j))
+
                 else
                     r(i,j) = 0.
                 endif ! fill==0
              enddo
           enddo
-      
+
           aout(:,:)=r(:,:)+aout(:,:)
-      
+
           if (maxval(abs(r)) <= acrit) then
               exit
           endif
@@ -399,7 +370,6 @@ contains
 
  end function fill_miss_2d
 
-#ifdef PY_SOLO
 
   function wright_eos_2d(T,S,p) result(rho)
 !
@@ -414,15 +384,15 @@ contains
 ! Returns density [kg m-3]
 
     real(kind=8), dimension(:,:), intent(in) :: T,S
-    real, intent(in) :: p
+    real(kind=8), intent(in) :: p
 
     real(kind=8), dimension(size(T,1),size(T,2)) :: rho
 
-    
+
     real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
     real(kind=8) :: al0,lam,p0,I_denom
     integer :: i,k
-    
+
     a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7;
     b0 = 5.790749e8;  b1 = 3.516535e6;  b2 = -4.002714e4;
     b3 = 2.084372e2;  b4 = 5.944068e5;  b5 = -9.643486e3;
@@ -436,15 +406,15 @@ contains
                b3*T(i,k)) + b5*S(i,k))
           lam = c0 +c4*S(i,k) + T(i,k) * (c1 + T(i,k)*(c2 + &
                c3*T(i,k)) + c5*S(i,k))
-          I_denom = 1.0 / (lam + al0*(p+p0))  
+          I_denom = 1.0 / (lam + al0*(p+p0))
           rho(i,k) = (p + p0) * I_denom
        enddo
     enddo
-    
+
 
     return
   end function wright_eos_2d
-  
+
   function alpha_wright_eos_2d(T,S,p) result(drho_dT)
 
 ! **********************************************************************
@@ -457,16 +427,16 @@ contains
 ! Returns density [kg m-3 C-1]
 
     real(kind=8), dimension(:,:), intent(in) :: T,S
-    real, intent(in) :: p
+    real(kind=8), intent(in) :: p
 
     real(kind=8), dimension(size(T,1),size(T,2)) :: drho_dT
 
-    
+
 
     real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
     real(kind=8) :: al0,lam,p0,I_denom,I_denom2
     integer :: i,k
-    
+
     a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7;
     b0 = 5.790749e8;  b1 = 3.516535e6;  b2 = -4.002714e4;
     b3 = 2.084372e2;  b4 = 5.944068e5;  b5 = -9.643486e3;
@@ -487,13 +457,13 @@ contains
                (c1+T(i,k)*(2*c2 + 3*c3*T(i,k)) + c5*S(i,k))))
        enddo
     enddo
-    
+
 
     return
   end function alpha_wright_eos_2d
 
   function beta_wright_eos_2d(T,S,p) result(drho_dS)
-    
+
 ! **********************************************************************
 !   The subroutines in this file implement the equation of state for   *
 !   sea water using the formulae given by  Wright, 1997, J. Atmos.     *
@@ -504,7 +474,7 @@ contains
 ! Returns density [kg m-3 PSU-1]
 
     real(kind=8), dimension(:,:), intent(in) :: T,S
-    real, intent(in) :: p
+    real(kind=8), intent(in) :: p
 
     real(kind=8), dimension(size(T,1),size(T,2)) :: drho_dS
 
@@ -513,7 +483,7 @@ contains
     real(kind=8) :: a0,a1,a2,b0,b1,b2,b3,b4,b5,c0,c1,c2,c3,c4,c5
     real(kind=8) :: al0,lam,p0,I_denom,I_denom2
     integer :: i,k
-    
+
     a0 = 7.057924e-4; a1 = 3.480336e-7; a2 = -1.112733e-7;
     b0 = 5.790749e8;  b1 = 3.516535e6;  b2 = -4.002714e4;
     b3 = 2.084372e2;  b4 = 5.944068e5;  b5 = -9.643486e3;
@@ -533,16 +503,16 @@ contains
                (p+p0)*((p+p0)*a2 + (c4+c5*T(i,k))))
        enddo
     enddo
-    
+
 
     return
   end function beta_wright_eos_2d
-#endif
-  
+
+
   function tracer_z_init(tr_in,z_edges,e,nkml,nkbl,land_fill,wet,nlay,nlevs,debug) result(tr)
 !
-! Adopted from R. Hallberg    
-! Arguments: 
+! Adopted from R. Hallberg
+! Arguments:
 !  (in)     tr_in  - The z-space array of tracer concentrations that is read in.
 !  (in)   z_edges  - The depths of the cell edges in the input z* data (m)
 !  (in)         e  - The depths of the layer interfaces (m)
@@ -551,7 +521,7 @@ contains
 !  (in)  land_fill - fill in data over land
 !  (in)        wet - wet mask (1=ocean)
 !  (in)       nlay - number of layers
-!  (in)      nlevs - number of levels    
+!  (in)      nlevs - number of levels
 
 !  (out)        tr - tracers on layers
 
@@ -563,49 +533,33 @@ contains
 !               center and normalized by the cell thickness, nondim.
 !               Note that -1/2 <= z1 <= z2 <= 1/2.
 !
-#ifdef PY_SOLO
     real(kind=8), dimension(:,:,:), intent(in) :: tr_in
     real(kind=8), dimension(size(tr_in,3)+1), intent(in) :: z_edges
     integer, intent(in) :: nlay
     real(kind=8), dimension(size(tr_in,1),size(tr_in,2),nlay+1), intent(in) :: e
     integer, intent(in) :: nkml,nkbl
-    real, intent(in) :: land_fill
+    real(kind=8), intent(in) :: land_fill
     real(kind=8), dimension(size(tr_in,1),size(tr_in,2)), intent(in) :: wet
     real(kind=8), dimension(size(tr_in,1),size(tr_in,2)), optional, intent(in) ::nlevs
     logical, intent(in), optional :: debug
 
-    real(kind=8), dimension(size(tr_in,1),size(tr_in,2),nlay) :: tr    
-#endif
-
-#ifndef PY_SOLO
-    real, dimension(:,:,:), intent(in) :: tr_in
-    real, dimension(size(tr_in,3)+1), intent(in) :: z_edges
-    integer, intent(in) :: nlay
-    real, dimension(size(tr_in,1),size(tr_in,2),nlay+1), intent(in) :: e
-    integer, intent(in) :: nkml,nkbl
-    real, intent(in) :: land_fill
-    real, dimension(size(tr_in,1),size(tr_in,2)), intent(in) :: wet
-    real, dimension(size(tr_in,1),size(tr_in,2)), optional, intent(in) ::nlevs
-    logical, intent(in), optional :: debug
-
-    real, dimension(size(tr_in,1),size(tr_in,2),nlay) :: tr    
-#endif
-    
+    real(kind=8), dimension(size(tr_in,1),size(tr_in,2),nlay) :: tr
 
 
 
-    real, dimension(size(tr_in,3)) :: tr_1d
-    real, dimension(size(tr_in,3)+1) :: z_edges_
-    real, dimension(nlay+1) :: e_1d
+
+    real(kind=8), dimension(size(tr_in,3)) :: tr_1d
+    real(kind=8), dimension(size(tr_in,3)+1) :: z_edges_
+    real(kind=8), dimension(nlay+1) :: e_1d
     integer, dimension(size(tr_in,1),size(tr_in,2)) :: nlevs_
-    
+
     integer :: i,j,k,nx,ny,nz,kz
     integer :: k_top,k_bot,k_bot_prev
-    real    :: sl_tr
-    real, dimension(size(tr_in,3)+1) :: wt,z1,z2
+    real(kind=8)    :: sl_tr
+    real(kind=8), dimension(size(tr_in,3)+1) :: wt,z1,z2
     logical :: debug_msg = .false.,debug_=.false.
-    
-    nx = size(tr_in,1); ny=size(tr_in,2); nz = size(tr_in,3) 
+
+    nx = size(tr_in,1); ny=size(tr_in,2); nz = size(tr_in,3)
 
     nlevs_ = size(tr_in,3)
 
@@ -626,7 +580,7 @@ contains
               tr(i,j,:) = land_fill
               cycle i_loop
           endif
-             
+
           do k=1,nz
              tr_1d(k) = tr_in(i,j,k)
           enddo
@@ -694,32 +648,32 @@ contains
 
 
   end function tracer_z_init
-  
-  
+
+
   function bisect_fast(a, x, lo, hi) result(bi_r)
 !
 !  Return the index where to insert item x in list a, assuming a is sorted.
 !  The return values [i] is such that all e in a[:i-1] have e <= x, and all e in
-!  a[i:] have e > x. So if x already appears in the list, will    
+!  a[i:] have e > x. So if x already appears in the list, will
 !  insert just after the rightmost x already there.
 !  Optional args lo (default 1) and hi (default len(a)) bound the
 !  slice of a to be searched.
 !
 !  (in)  a - sorted list
 !  (in)  x - item to be inserted
-!  (in)  lo, hi - optional range to search    
+!  (in)  lo, hi - optional range to search
 
-    real, dimension(:,:), intent(in) :: a
-    real, dimension(:), intent(in) :: x
+    real(kind=8), dimension(:,:), intent(in) :: a
+    real(kind=8), dimension(:), intent(in) :: x
     integer, dimension(size(a,1)), intent(in), optional  :: lo,hi
     integer, dimension(size(a,1),size(x,1))  :: bi_r
 
     integer :: mid,num_x,i
     integer, dimension(size(a,1))  :: lo_,hi_,lo0,hi0
     integer :: nprofs,j
-    
+
     lo_=1;hi_=size(a,2);num_x=size(x,1);bi_r=-1;nprofs=size(a,1)
-    
+
     if (PRESENT(lo)) then
         where (lo>0) lo_=lo
     end if
@@ -744,90 +698,51 @@ contains
        enddo
     enddo
 
-    
-    return 
+
+    return
   end function bisect_fast
 
 
-#ifdef PY_SOLO
+
  subroutine determine_temperature(temp,salt,R,p_ref,niter,land_fill,h,k_start)
 
 ! # This subroutine determines the potential temperature and
 ! # salinity that is consistent with the target density
 ! # using provided initial guess
 ! #   (inout)     temp - potential temperature (degC)
-! #   (inout)     salt - salinity (PSU)   
-! #   (in)           R - Desired potential density, in kg m-3.            
-! #   (in)       p_ref - Reference pressure, in Pa.                     
-! #   (in)       niter - maximum number of iterations  
+! #   (inout)     salt - salinity (PSU)
+! #   (in)           R - Desired potential density, in kg m-3.
+! #   (in)       p_ref - Reference pressure, in Pa.
+! #   (in)       niter - maximum number of iterations
 ! #   (in)           h - layer thickness . Do not iterate for massless layers
 ! #   (in)     k_start - starting index (i.e. below the buffer layer)
 ! #   (in)   land_fill - land fill value
-   
+
    real(kind=8), dimension(:,:,:), intent(inout) :: temp,salt
    real(kind=8), dimension(size(temp,3)), intent(in) :: R
-   real, intent(in) :: p_ref
+   real(kind=8), intent(in) :: p_ref
    integer, intent(in) :: niter
    integer, intent(in) :: k_start
-   real, intent(in) :: land_fill
+   real(kind=8), intent(in) :: land_fill
    real(kind=8), dimension(:,:,:), intent(in) :: h
 
    real(kind=8), dimension(size(temp,1),size(temp,3)) :: T,S,dT,dS,rho,hin
    real(kind=8), dimension(size(temp,1),size(temp,3)) :: drho_dT,drho_dS
    real(kind=8), dimension(size(temp,1)) :: press
-   
+
    integer :: nx,ny,nz,i,j,k,itt
-   real, parameter :: T_max = 35.0, T_min = -2.0
-   real, parameter :: S_min = 0.5, S_max=65.0
-   real, parameter :: tol=1.e-4, max_t_adj=1.0, max_s_adj = 0.5
+   real(kind=8), parameter :: T_max = 35.0, T_min = -2.0
+   real(kind=8), parameter :: S_min = 0.5, S_max=65.0
+   real(kind=8), parameter :: tol=1.e-4, max_t_adj=1.0, max_s_adj = 0.5
    logical :: adjust_salt
 
-#endif
 
-#ifndef PY_SOLO   
-   
- subroutine determine_temperature(temp,salt,R,p_ref,niter,land_fill,h,k_start,eos)
 
-! # This subroutine determines the potential temperature and
-! # salinity that is consistent with the target density
-! # using provided initial guess
-! #   (inout)     temp - potential temperature (degC)
-! #   (inout)     salt - salinity (PSU)   
-! #   (in)           R - Desired potential density, in kg m-3.            
-! #   (in)       p_ref - Reference pressure, in Pa.                     
-! #   (in)       niter - maximum number of iterations  
-! #   (in)           h - layer thickness . Do not iterate for massless layers
-! #   (in)     k_start - starting index (i.e. below the buffer layer)
-! #   (in)   land_fill - land fill value
-! #   (in)        eos  - seawater equation of state
-   
-   real, dimension(:,:,:), intent(inout) :: temp,salt
-   real, dimension(size(temp,3)), intent(in) :: R
-   real, intent(in) :: p_ref
-   integer, intent(in) :: niter
-   integer, intent(in) :: k_start
-   real, intent(in) :: land_fill
-   real, dimension(:,:,:), intent(in) :: h
-   type(eos_type), pointer, intent(in) :: eos
-
-   real(kind=8), dimension(size(temp,1),size(temp,3)) :: T,S,dT,dS,rho,hin
-   real(kind=8), dimension(size(temp,1),size(temp,3)) :: drho_dT,drho_dS
-   real(kind=8), dimension(size(temp,1)) :: press
-   
-   integer :: nx,ny,nz,nt,i,j,k,n,itt
-   real, parameter :: T_max = 31.0, T_min = -2.0
-   real, parameter :: S_min = 0.5, S_max=65.0
-   real, parameter :: tol=1.e-4, max_t_adj=1.0, max_s_adj = 0.5
-   logical :: adjust_salt
-   
-#endif
-   
-   
    nx=size(temp,1);ny=size(temp,2); nz=size(temp,3)
 
 
    press(:) = p_ref
-   
+
    do j=1,ny
       T=temp(:,j,:)
       S=salt(:,j,:)
@@ -835,21 +750,12 @@ contains
       dT=0.0
       adjust_salt=.true.
       iter_loop: do itt = 1,niter
-#ifdef PY_SOLO
          rho=wright_eos_2d(T,S,p_ref)
          drho_dT=alpha_wright_eos_2d(T,S,p_ref)
-#endif
-
-#ifndef PY_SOLO         
-         do k=1, nz
-            call calculate_density(T(:,k),S(:,k),press,rho(:,k),1,nx,eos)
-            call calculate_density_derivs(T(:,k),S(:,k),press,drho_dT(:,k),drho_dS(:,k),1,nx,eos)
-         enddo
-#endif         
          do k=k_start,nz
             do i=1,nx
 !               if (abs(rho(i,k)-R(k))>tol .and. hin(i,k)>epsln .and. abs(T(i,k)-land_fill) < epsln) then
-               if (abs(rho(i,k)-R(k))>tol) then               
+               if (abs(rho(i,k)-R(k))>tol) then
                    dT(i,k)=(R(k)-rho(i,k))/drho_dT(i,k)
                    if (dT(i,k)>max_t_adj) dT(i,k)=max_t_adj
                    if (dT(i,k)<-1.0*max_t_adj) dT(i,k)=-1.0*max_t_adj
@@ -865,21 +771,12 @@ contains
 
       if (adjust_salt) then
           iter_loop2: do itt = 1,niter
-#ifdef PY_SOLO
              rho=wright_eos_2d(T,S,p_ref)
              drho_dS=beta_wright_eos_2d(T,S,p_ref)
-#endif
-
-#ifndef PY_SOLO             
-             do k=1, nz
-                call calculate_density(T(:,k),S(:,k),press,rho(:,k),1,nx,eos)
-                call calculate_density_derivs(T(:,k),S(:,k),press,drho_dT(:,k),drho_dS(:,k),1,nx,eos)
-             enddo
-#endif             
              do k=k_start,nz
                 do i=1,nx
 !                   if (abs(rho(i,k)-R(k))>tol .and. hin(i,k)>epsln .and. abs(T(i,k)-land_fill) < epsln ) then
-                   if (abs(rho(i,k)-R(k))>tol ) then                       
+                   if (abs(rho(i,k)-R(k))>tol ) then
                        dS(i,k)=(R(k)-rho(i,k))/drho_dS(i,k)
                        if (dS(i,k)>max_s_adj) dS(i,k)=max_s_adj
                        if (dS(i,k)<-1.0*max_s_adj) dS(i,k)=-1.0*max_s_adj
@@ -920,19 +817,19 @@ contains
 !                           overlap with the depth range.
 !  (out)     wt - The relative weights of each layer from k_top to k_bot.
 !  (out)     z1, z2 - z1 and z2 are the depths of the top and bottom limits of
-!                     the part of a layer that contributes to a depth level, 
+!                     the part of a layer that contributes to a depth level,
 !                     relative to the cell center and normalized by the cell
 !                     thickness, nondim.  Note that -1/2 <= z1 < z2 <= 1/2.
-   
-    real, dimension(:), intent(in) :: e
-    real, intent(in)   :: Z_top, Z_bot
+
+    real(kind=8), dimension(:), intent(in) :: e
+    real(kind=8), intent(in)   :: Z_top, Z_bot
     integer, intent(in) :: k_max, k_start
     integer, intent(out) :: k_top, k_bot
-    real, dimension(:), intent(out) :: wt, z1, z2
+    real(kind=8), dimension(:), intent(out) :: wt, z1, z2
 
-    real :: Ih, e_c, tot_wt, I_totwt
+    real(kind=8) :: Ih, e_c, tot_wt, I_totwt
     integer :: k
-  
+
     do k=k_start,k_max ; if (e(k+1)<Z_top) exit ; enddo
     k_top = k
     if (k>k_max) return
@@ -965,9 +862,9 @@ contains
         I_totwt = 1.0 / tot_wt
         do k=k_top,k_bot ; wt(k) = I_totwt*wt(k) ; enddo
     endif
-  
+
   end subroutine find_overlap
-  
+
 
   function find_limited_slope(val, e, k) result(slope)
 
@@ -979,16 +876,16 @@ contains
 !  (in)      slope - The normalized slope in the intracell distribution of val.
 !  (in)      k - The layer whose slope is being determined.
 
-    
-    real, dimension(:), intent(in) :: val
-    real, dimension(:), intent(in) :: e
+
+    real(kind=8), dimension(:), intent(in) :: val
+    real(kind=8), dimension(:), intent(in) :: e
     integer, intent(in) :: k
-    real :: slope,amax,bmax,amin,bmin,cmin,dmin
-    
-    real :: d1, d2
-    
+    real(kind=8) :: slope,amax,bmax,amin,bmin,cmin,dmin
+
+    real(kind=8) :: d1, d2
+
     if ((val(k)-val(k-1)) * (val(k)-val(k+1)) >= 0.0) then
-        slope = 0.0 ! ; curvature = 0.0   
+        slope = 0.0 ! ; curvature = 0.0
     else
         d1 = 0.5*(e(k-1)-e(k+1)) ; d2 = 0.5*(e(k)-e(k+2))
         slope = ((d1**2)*(val(k+1) - val(k)) + (d2**2)*(val(k) - val(k-1))) * &
@@ -1003,24 +900,24 @@ contains
         dmin = min(amin,cmin)
         slope = sign(1.0,slope) * dmin
 
-! min(abs(slope), &             
+! min(abs(slope), &
 !             2.0*(max(val(k-1),val(k),val(k+1)) - val(k)), &
 !             2.0*(val(k) - min(val(k-1),val(k),val(k+1))))
-! curvature = 0.0  
+! curvature = 0.0
     endif
 
   end function find_limited_slope
-  
 
-  
+
+
 
   subroutine meshgrid(x,y,x_T,y_T)
-    
+
 !  create a 2d-mesh of grid coordinates
 !  from 1-d arrays.
-    
-    real, dimension(:), intent(in) :: x,y
-    real, dimension(size(x,1),size(y,1)), intent(inout) :: x_T,y_T
+
+    real(kind=8), dimension(:), intent(in) :: x,y
+    real(kind=8), dimension(size(x,1),size(y,1)), intent(inout) :: x_T,y_T
 
     integer :: ni,nj,i,j
 
@@ -1029,45 +926,45 @@ contains
     do j=1,nj
        x_T(:,j)=x(:)
     enddo
-    
+
     do i=1,ni
        y_T(i,:)=y(:)
     enddo
 
     return
-    
+
   end subroutine meshgrid
-          
+
   subroutine smooth_heights(zi,fill,bad,sor,niter,cyclic_x, tripolar_n)
 !
 ! Solve del2 (zi) = 0 using successive iterations
-! with a 5 point stencil. Only points fill==1 are 
+! with a 5 point stencil. Only points fill==1 are
 ! modified. Except where bad==1, information propagates
 ! isotropically in index space.  The resulting solution
 ! in each region is an approximation to del2(zi)=0 subject to
 ! boundary conditions along the valid points curve bounding this region.
 
 
-    real, dimension(:,:), intent(inout) :: zi
+    real(kind=8), dimension(:,:), intent(inout) :: zi
     integer, dimension(size(zi,1),size(zi,2)), intent(in) :: fill
     integer, dimension(size(zi,1),size(zi,2)), intent(in) :: bad
-    real, intent(in)  :: sor
+    real(kind=8), intent(in)  :: sor
     integer, intent(in) :: niter
     logical, intent(in) :: cyclic_x, tripolar_n
 
     integer :: i,j
     integer :: ni,nj
 
-    real, dimension(size(zi,1),size(zi,2)) :: res
+    real(kind=8), dimension(size(zi,1),size(zi,2)) :: res
     integer, dimension(size(zi,1),size(zi,2),4) :: B
-    real, dimension(0:size(zi,1)+1,0:size(zi,2)+1) :: mp
+    real(kind=8), dimension(0:size(zi,1)+1,0:size(zi,2)+1) :: mp
     integer, dimension(0:size(zi,1)+1,0:size(zi,2)+1) :: nm
 
-    real :: Isum, bsum
-    
+    real(kind=8) :: Isum, bsum
+
     ni=size(zi,1); nj=size(zi,2)
 
-    
+
     mp=fill_boundaries(zi,cyclic_x,tripolar_n)
 
     B(:,:,:)=0
@@ -1104,22 +1001,22 @@ contains
        zi(:,:)=mp(1:ni,1:nj)
        mp = fill_boundaries(zi,cyclic_x,tripolar_n)
     end do
-    
-        
-    
+
+
+
     return
 
   end subroutine smooth_heights
 
   function fill_boundaries_int(m,cyclic_x,tripolar_n) result(mp)
 !
-! fill grid edges 
+! fill grid edges
 !
     integer, dimension(:,:), intent(in) :: m
     logical, intent(in) :: cyclic_x, tripolar_n
-    real, dimension(size(m,1),size(m,2)) :: m_real
-    real, dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp_real
-    integer, dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp    
+    real(kind=8), dimension(size(m,1),size(m,2)) :: m_real
+    real(kind=8), dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp_real
+    integer, dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp
 
     m_real = real(m)
 
@@ -1128,21 +1025,21 @@ contains
     mp = int(mp_real)
 
   end function fill_boundaries_int
-    
+
   function fill_boundaries_real(m,cyclic_x,tripolar_n) result(mp)
 !
-! fill grid edges 
+! fill grid edges
 !
-    real, dimension(:,:), intent(in) :: m
+    real(kind=8), dimension(:,:), intent(in) :: m
     logical, intent(in) :: cyclic_x, tripolar_n
-    real, dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp
+    real(kind=8), dimension(0:size(m,1)+1,0:size(m,2)+1) :: mp
 
     integer :: ni,nj,i
 
     ni=size(m,1); nj=size(m,2)
 
     mp(1:ni,1:nj)=m(:,:)
-    
+
     if (cyclic_x) then
         mp(0,1:nj)=m(ni,1:nj)
         mp(ni+1,1:nj)=m(1,1:nj)
@@ -1151,7 +1048,7 @@ contains
         mp(ni+1,1:nj)=m(ni,1:nj)
     endif
 
-    mp(1:ni,0)=m(1:ni,1)    
+    mp(1:ni,0)=m(1:ni,1)
     if (tripolar_n) then
         do i=1,ni
            mp(i,nj+1)=m(ni-i+1,nj)
@@ -1163,5 +1060,5 @@ contains
   end function fill_boundaries_real
 
 
-  
+
 end module vertmap_GOLD_mod
