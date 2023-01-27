@@ -898,7 +898,7 @@ contains
         bmin = min(val(k-1),val(k))
         cmin = 2.0*(val(k)-min(bmin,val(k+1)))
         dmin = min(amin,cmin)
-        slope = sign(1.0,slope) * dmin
+        slope = sign(1.0d0,slope) * dmin
 
 ! min(abs(slope), &
 !             2.0*(max(val(k-1),val(k),val(k+1)) - val(k)), &
